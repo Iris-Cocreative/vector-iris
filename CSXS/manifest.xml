@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionManifest Version="7.0" ExtensionBundleId="com.iriscocreative.vectoriris" ExtensionBundleVersion="0.2.0"
+  ExtensionBundleName="Vector Iris" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <ExtensionList>
+    <Extension Id="com.iriscocreative.vectoriris.panel" Version="0.2.0" />
+  </ExtensionList>
+  <ExecutionEnvironment>
+    <HostList>
+      <Host Name="ILST" Version="[25.0,99.9]" />
+    </HostList>
+    <LocaleList>
+      <Locale Code="All" />
+    </LocaleList>
+    <RequiredRuntimeList>
+      <RequiredRuntime Name="CSXS" Version="9.0" />
+    </RequiredRuntimeList>
+  </ExecutionEnvironment>
+  <DispatchInfoList>
+    <Extension Id="com.iriscocreative.vectoriris.panel">
+      <DispatchInfo>
+        <Resources>
+          <MainPath>./index.html</MainPath>
+          <ScriptPath>./jsx/host.jsx</ScriptPath>
+          <!-- Node.js in the panel: file access and HTTPS calls without browser CORS limits -->
+          <CEFCommandLine>
+            <Parameter>--enable-nodejs</Parameter>
+            <Parameter>--mixed-context</Parameter>
+          </CEFCommandLine>
+        </Resources>
+        <Lifecycle>
+          <AutoVisible>true</AutoVisible>
+        </Lifecycle>
+        <UI>
+          <Type>Panel</Type>
+          <Menu>Vector Iris</Menu>
+          <Geometry>
+            <Size>
+              <Height>560</Height>
+              <Width>280</Width>
+            </Size>
+            <MinSize>
+              <Height>360</Height>
+              <Width>240</Width>
+            </MinSize>
+            <MaxSize>
+              <Height>1400</Height>
+              <Width>520</Width>
+            </MaxSize>
+          </Geometry>
+        </UI>
+      </DispatchInfo>
+    </Extension>
+  </DispatchInfoList>
+</ExtensionManifest>

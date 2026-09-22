@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Vector Iris</title>
+  <link rel="stylesheet" href="css/panel.css">
+</head>
+<body>
+  <!-- The mark: an eye of spectrum bands, after the image that started this. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="mark" viewBox="0 0 40 40">
+      <path d="M2 20 C 10 4, 30 4, 38 20 C 30 36, 10 36, 2 20 Z" fill="#e8553a"/>
+      <path d="M6 20 C 12 8, 28 8, 34 20 C 28 32, 12 32, 6 20 Z" fill="#f0b429"/>
+      <path d="M10 20 C 14 11, 26 11, 30 20 C 26 29, 14 29, 10 20 Z" fill="#5fb37f"/>
+      <path d="M13.5 20 C 16 14, 24 14, 26.5 20 C 24 26, 16 26, 13.5 20 Z" fill="#2f86c1"/>
+      <circle cx="20" cy="20" r="5.2" fill="#e8301c"/>
+      <circle cx="20" cy="20" r="3.4" fill="#0b0b0b"/>
+    </symbol>
+  </svg>
+
+  <!-- First run: bring your own key -->
+  <main class="panel welcome" id="welcome" hidden>
+    <header class="brand big">
+      <svg class="mark"><use href="#mark"/></svg>
+      <div>
+        <h1>Vector Iris</h1>
+        <p class="tagline">Clean, editable vectors from images and ideas, inside Illustrator.</p>
+      </div>
+    </header>
+
+    <section class="group">
+      <div class="heading">Connect your Quiver API key</div>
+      <p class="body">Vector Iris runs on Quiver's Arrow models using your own API account, so you only pay Quiver for what you make.</p>
+      <ol class="steps">
+        <li><a href="#" data-url="https://platform.quiver.ai/">Create an API key at Quiver</a> and add credit (prepaid, from $10).</li>
+        <li>Paste the key here.</li>
+      </ol>
+      <div class="key-row">
+        <input id="welcome-key" type="password" placeholder="sk_..." autocomplete="off" spellcheck="false">
+        <button type="button" id="welcome-connect" class="primary">Connect</button>
+      </div>
+      <p id="welcome-status" class="status" aria-live="polite"></p>
+    </section>
+
+    <section class="group fine">
+      <p><strong>Cost.</strong> Quiver bills your account per result. Logos and icons usually cost 1 to 10¢; detailed photos can reach about 50¢.</p>
+      <p><strong>Privacy.</strong> Your key is stored only on this computer and sent only to Quiver. Images you vectorize are sent to Quiver for processing.</p>
+      <p><strong>Rights.</strong> Quiver's terms assign you the rights to what you generate; their free tier is limited to non-commercial use. <a href="#" data-url="https://quiver.ai/legal/terms/">Read Quiver's terms</a>.</p>
+    </section>
+
+    <footer class="credit">Free from <a href="#" data-url="https://www.iriscocreative.com/">Iris Cocreative</a>. Not affiliated with QuiverAI.</footer>
+  </main>
+
+  <!-- Main panel -->
+  <main class="panel" id="main" hidden>
+    <header class="brand">
+      <svg class="mark"><use href="#mark"/></svg>
+      <h1>Vector Iris</h1>
+      <span class="powered">Quiver Arrow</span>
+    </header>
+
+    <section class="group first">
+      <div class="seg three" role="radiogroup" id="mode">
+        <button type="button" data-v="trace" role="radio">Trace</button>
+        <button type="button" data-v="redraw" role="radio">Redraw</button>
+        <button type="button" data-v="generate" role="radio">Generate</button>
+      </div>
+      <p class="hint" id="mode-hint"></p>
+    </section>
+
+    <section class="source" id="source">
+      <div class="source-mark" aria-hidden="true"></div>
+      <div class="source-text">
+        <div class="source-name" id="source-name">Nothing selected</div>
+        <div class="source-hint" id="source-hint">Select an image on the artboard.</div>
+      </div>
+    </section>
+
+    <section class="group" id="prompt-fields">
+      <label class="field-label" for="prompt">Prompt</label>
+      <textarea id="prompt" rows="3"></textarea>
+      <label class="field-label" for="instructions">Style <span>(optional)</span></label>
+      <textarea id="instructions" rows="2" placeholder="Flat colors, no gradients, bold shapes."></textarea>
+      <div class="gen-only">
+        <div class="row">
+          <label for="format">Format</label>
+          <select id="format">
+            <option value="1:1">Square</option>
+            <option value="4:3">Landscape 4:3</option>
+            <option value="16:9">Wide 16:9</option>
+            <option value="3:4">Portrait 3:4</option>
+            <option value="9:16">Tall 9:16</option>
+          </select>
+        </div>
+        <label class="check"><input id="use-ref" type="checkbox"><span></span>Use the selection as a style reference</label>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="heading">Effort</div>
+      <div class="seg four" role="radiogroup" id="effort">
+        <button type="button" data-v="low" role="radio">Low</button>
+        <button type="button" data-v="medium" role="radio">Medium</button>
+        <button type="button" data-v="high" role="radio">High</button>
+        <button type="button" data-v="xhigh" role="radio">Max</button>
+      </div>
+      <p class="hint">How long Arrow reasons before drawing. Higher costs more and adds shapes, which isn't always better. Start on Low.</p>
+      <div class="row">
+        <label for="model">Model</label>
+        <select id="model">
+          <option value="arrow-2-telos">Arrow 2 Telos (best)</option>
+          <option value="arrow-2">Arrow 2 (fastest, cheapest)</option>
+        </select>
+      </div>
+      <div class="row" id="size-row">
+        <label for="size">Export</label>
+        <select id="size">
+          <option value="1024">1024 px</option>
+          <option value="2048">2048 px</option>
+          <option value="4096">4096 px</option>
+        </select>
+      </div>
+    </section>
+
+    <details class="group settings" id="settings">
+      <summary>Settings</summary>
+      <label class="field-label" for="key">Quiver API key <span id="key-state"></span></label>
+      <div class="key-row">
+        <input id="key" type="password" placeholder="Paste a new key" autocomplete="off" spellcheck="false">
+        <button type="button" id="key-save" class="ghost">Save</button>
+      </div>
+      <label class="field-label" for="outdir">Save SVGs to</label>
+      <div class="key-row">
+        <input id="outdir" type="text" spellcheck="false">
+        <button type="button" id="outdir-open" class="ghost" title="Open this folder">Open</button>
+      </div>
+      <div class="row">
+        <label for="gap">Gap</label>
+        <span class="num-wrap"><input id="gap" class="num" type="number" min="0" step="1"><i>pt</i></span>
+        <span></span>
+      </div>
+      <p class="about">
+        <span id="version"></span> ·
+        <a href="#" data-url="https://quiver.ai/legal/terms/">Quiver terms</a> ·
+        <a href="#" id="forget-key">Forget key</a><br>
+        Free from <a href="#" data-url="https://www.iriscocreative.com/">Iris Cocreative</a>. Not affiliated with QuiverAI.
+      </p>
+    </details>
+
+    <footer class="foot">
+      <div class="progress" id="progress" hidden>
+        <div class="bar"><span></span></div>
+        <div class="progress-text"><span id="progress-label">Working</span><span id="elapsed">0s</span></div>
+      </div>
+      <p id="status" class="status" aria-live="polite"></p>
+      <div class="actions">
+        <button type="button" id="cancel" class="ghost" hidden>Cancel</button>
+        <button type="button" id="go" class="primary">Vectorize</button>
+      </div>
+      <ol class="history" id="history"></ol>
+    </footer>
+  </main>
+  <script src="js/quiver.js"></script>
+  <script src="js/panel.js"></script>
+</body>
+</html>
