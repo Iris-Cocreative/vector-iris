@@ -18,6 +18,8 @@ speckled fragments of a classic trace. Or describe something and it draws it.
 
 Every result is also saved as an `.svg` file (default: `Documents/Vector Iris`).
 
+A Figma version (preview) lives in [`figma/`](figma/README.md).
+
 ## Requirements
 
 - Adobe Illustrator 2021 (v25) or later

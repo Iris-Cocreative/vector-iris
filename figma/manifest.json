@@ -1,0 +1,17 @@
+{
+  "name": "Vector Iris",
+  "id": "vector-iris-dev",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": [
+    "figma"
+  ],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": [
+      "https://api.quiver.ai"
+    ],
+    "reasoning": "Sends the selected image or your prompt, with your own Quiver API key, to Quiver's Arrow API, which returns the SVG. Nothing is sent anywhere else."
+  }
+}

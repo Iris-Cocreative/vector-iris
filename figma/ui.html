@@ -1,0 +1,1005 @@
+<!doctype html>
+<!-- Built by build.js from src/. Edit src/, then run: node build.js -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Vector Iris</title>
+  <style>
+/* ../css/panel.css */
+/* Tokens: dark by default; panel.js sets --bg from Illustrator and flips to light. */
+:root {
+  --bg: #323232;
+  --field: #232323;
+  --line: #474747;
+  --text: #d6d6d6;
+  --muted: #8f8f8f;
+  --accent: #3d8ef0;
+  --accent-text: #ffffff;
+  --ok: #5fc48a;
+  --danger: #f07a6a;
+}
+:root[data-theme="light"] {
+  --field: #ffffff;
+  --line: #c4c4c4;
+  --text: #1f1f1f;
+  --muted: #6b6b6b;
+  --ok: #1f8a4c;
+  --danger: #c4402e;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 12px/1.35 "Segoe UI", system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Scrollbars: thin, themed, and only as visible as they need to be.
+   WebKit pseudo-elements, because that's what CEP's Chromium honors. */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 5px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  min-height: 32px;
+}
+::-webkit-scrollbar-thumb:hover { background-color: var(--muted); }
+::-webkit-scrollbar-thumb:active { background-color: var(--accent); }
+textarea::-webkit-scrollbar { width: 8px; }
+textarea::-webkit-scrollbar-thumb { border-width: 2px; }
+
+.panel { display: flex; flex-direction: column; min-height: 100%; padding: 12px; gap: 12px; }
+
+.source { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.source > div:last-child { min-width: 0; }
+.source-mark {
+  flex: none; width: 34px; height: 34px; border-radius: 4px;
+  border: 1px dashed var(--line);
+  display: grid; place-items: center; color: var(--muted);
+}
+.source-mark .ic { display: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.source[data-kind="image"] .ic-image, .source[data-kind="art"] .ic-art,
+.source[data-kind="new"] .ic-new, .source:not([data-kind]) .ic-empty, .source[data-kind="empty"] .ic-empty { display: block; }
+.source.ready .source-mark { border-style: solid; border-color: var(--accent); color: var(--accent); }
+.source-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.source-hint { color: var(--muted); font-size: 11px; }
+
+.group { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.group.first { border-top: 0; padding-top: 0; }
+.heading { color: var(--muted); font-size: 11px; }
+.hint { margin: 0; color: var(--muted); font-size: 11px; }
+
+.seg { display: grid; grid-template-columns: repeat(2, 1fr); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+.seg.three { grid-template-columns: repeat(3, 1fr); }
+.seg.four { grid-template-columns: repeat(4, 1fr); }
+.seg button { height: 24px; border: 0; background: var(--field); color: var(--muted); font: inherit; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-checked="true"] { background: var(--accent); color: var(--accent-text); }
+
+.row { display: grid; grid-template-columns: 58px minmax(0, 1fr) 40px; align-items: center; gap: 8px; }
+.row > label { color: var(--muted); }
+.row select { grid-column: 2 / 4; }
+
+select, textarea, input[type="text"], input[type="password"], .num {
+  width: 100%;
+  min-width: 0;
+  background: var(--field);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font: inherit;
+}
+select, input[type="text"], input[type="password"], .num { height: 24px; padding: 0 6px; }
+textarea { padding: 5px 6px; resize: vertical; min-height: 44px; }
+select:focus, textarea:focus, input:focus { outline: none; border-color: var(--accent); }
+::placeholder { color: var(--muted); opacity: 0.7; }
+
+.field-label { color: var(--muted); font-size: 11px; }
+.field-label span { opacity: 0.8; }
+.redraw-fields { display: flex; flex-direction: column; gap: 6px; }
+.redraw-fields[hidden] { display: none; }
+
+.num-wrap { position: relative; display: flex; align-items: center; }
+.num-wrap i { position: absolute; right: 6px; font-style: normal; color: var(--muted); pointer-events: none; }
+.num { padding-right: 22px; font-variant-numeric: tabular-nums; }
+.num::-webkit-inner-spin-button, .num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+.settings summary { cursor: pointer; color: var(--muted); font-size: 11px; list-style: none; }
+.settings summary::before { content: "▸ "; }
+.settings[open] summary::before { content: "▾ "; }
+.settings[open] { gap: 8px; }
+.key-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+#key-state.set { color: var(--ok); }
+#key-state.unset { color: var(--danger); }
+
+button.ghost, button.primary { height: 26px; padding: 0 12px; border-radius: 3px; font: inherit; cursor: pointer; }
+button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+button.ghost:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); color: var(--accent-text); border: 1px solid var(--accent); font-weight: 600; min-width: 96px; }
+button.primary:hover { filter: brightness(1.08); }
+button:disabled { opacity: 0.45; cursor: default; filter: none; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+[hidden] { display: none !important; }
+
+.foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.status { margin: 0; min-height: 16px; color: var(--muted); }
+.status.error { color: var(--danger); }
+.status.ok { color: var(--ok); }
+.actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+.progress { display: flex; flex-direction: column; gap: 4px; }
+.bar { height: 3px; background: var(--field); border-radius: 2px; overflow: hidden; }
+.bar span { display: block; height: 100%; width: 30%; background: var(--accent); border-radius: 2px; animation: slide 1.4s ease-in-out infinite; }
+@keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
+.progress-text { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+.history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.history li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 11px; }
+.history .h-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history .h-meta { color: var(--muted); grid-column: 1; }
+.history a { grid-row: 1 / 3; grid-column: 2; align-self: center; color: var(--accent); cursor: pointer; text-decoration: none; }
+.history a:hover { text-decoration: underline; }
+
+@media (prefers-reduced-motion: reduce) { .bar span { animation: none; width: 100%; opacity: 0.6; } }
+
+/* ---------- brand ---------- */
+.brand { display: flex; align-items: center; gap: 8px; }
+.brand .mark { width: 22px; height: 22px; flex: none; }
+.brand h1 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.01em; }
+.brand .powered { margin-left: auto; color: var(--muted); font-size: 10px; }
+.brand.big { align-items: flex-start; gap: 12px; }
+.brand.big .mark { width: 44px; height: 44px; }
+.brand.big h1 { font-size: 17px; }
+.tagline { margin: 3px 0 0; color: var(--muted); }
+
+a { color: var(--accent); text-decoration: none; cursor: pointer; }
+a:hover { text-decoration: underline; }
+
+/* ---------- welcome ---------- */
+.welcome .body { margin: 0; }
+.steps { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.fine p { margin: 0; color: var(--muted); font-size: 11px; }
+.fine strong { color: var(--text); font-weight: 600; }
+.credit { margin-top: auto; color: var(--muted); font-size: 11px; }
+
+/* ---------- source + generate ---------- */
+.source-text { min-width: 0; }
+.source.new .source-mark { border-style: solid; }
+.gen-only { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
+.check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.check input { position: absolute; opacity: 0; pointer-events: none; }
+.check span {
+  flex: none; width: 14px; height: 14px; border-radius: 3px;
+  border: 1px solid var(--line); background: var(--field);
+  display: grid; place-items: center;
+}
+.check input:checked + span { background: var(--accent); border-color: var(--accent); }
+.check input:checked + span::after { content: ""; width: 7px; height: 4px; border: 2px solid var(--accent-text); border-top: 0; border-right: 0; transform: translateY(-1px) rotate(-45deg); }
+.check input:focus-visible + span { box-shadow: 0 0 0 2px var(--accent); }
+.check input:disabled + span, .check input:disabled ~ * { opacity: 0.5; }
+
+.about { margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+</style>
+  <style>
+/* src/figma.css */
+/* Figma skin over css/panel.css: take Figma's own theme colors (showUI themeColors). */
+:root {
+  --bg: var(--figma-color-bg, #2c2c2c);
+  --field: var(--figma-color-bg-secondary, #383838);
+  --line: var(--figma-color-border, #444444);
+  --text: var(--figma-color-text, #ffffff);
+  --muted: var(--figma-color-text-secondary, #b3b3b3);
+  --accent: var(--figma-color-bg-brand, #0d99ff);
+  --accent-text: var(--figma-color-text-onbrand, #ffffff);
+  --ok: var(--figma-color-text-success, #79d297);
+  --danger: var(--figma-color-text-danger, #fca397);
+}
+body { font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 11px; }
+.brand h1 { font-size: 12px; }
+.brand.big h1 { font-size: 15px; }
+.history .h-links { grid-row: 1 / 3; grid-column: 2; align-self: center; display: flex; gap: 8px; }
+.history .h-links a { grid-row: auto; grid-column: auto; }
+</style>
+</head>
+<body>
+  <!-- The mark: an eye of spectrum bands, after the image that started this. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="mark" viewBox="0 0 40 40">
+      <path d="M2 20 C 10 4, 30 4, 38 20 C 30 36, 10 36, 2 20 Z" fill="#e8553a"/>
+      <path d="M6 20 C 12 8, 28 8, 34 20 C 28 32, 12 32, 6 20 Z" fill="#f0b429"/>
+      <path d="M10 20 C 14 11, 26 11, 30 20 C 26 29, 14 29, 10 20 Z" fill="#5fb37f"/>
+      <path d="M13.5 20 C 16 14, 24 14, 26.5 20 C 24 26, 16 26, 13.5 20 Z" fill="#2f86c1"/>
+      <circle cx="20" cy="20" r="5.2" fill="#e8301c"/>
+      <circle cx="20" cy="20" r="3.4" fill="#0b0b0b"/>
+    </symbol>
+  </svg>
+
+  <!-- First run: bring your own key -->
+  <main class="panel welcome" id="welcome" hidden>
+    <header class="brand big">
+      <svg class="mark"><use href="#mark"/></svg>
+      <div>
+        <h1>Vector Iris</h1>
+        <p class="tagline">Clean, editable vectors from images and ideas, inside Figma.</p>
+      </div>
+    </header>
+
+    <section class="group">
+      <div class="heading">Connect your Quiver API key</div>
+      <p class="body">Vector Iris runs on Quiver's Arrow models using your own API account, so you only pay Quiver for what you make.</p>
+      <ol class="steps">
+        <li><a href="#" data-url="https://platform.quiver.ai/">Create an API key at Quiver</a> and add credit (prepaid, from $10).</li>
+        <li>Paste the key here.</li>
+      </ol>
+      <div class="key-row">
+        <input id="welcome-key" type="password" placeholder="sk_..." autocomplete="off" spellcheck="false">
+        <button type="button" id="welcome-connect" class="primary">Connect</button>
+      </div>
+      <p id="welcome-status" class="status" aria-live="polite"></p>
+    </section>
+
+    <section class="group fine">
+      <p><strong>Cost.</strong> Quiver bills your account per result. Logos and icons usually cost 1 to 10¢; detailed photos can reach about 50¢.</p>
+      <p><strong>Privacy.</strong> Your key is kept in Figma's plugin storage on this computer and sent only to Quiver. Images you vectorize are sent to Quiver for processing.</p>
+      <p><strong>Rights.</strong> Quiver's terms assign you the rights to what you generate; their free tier is limited to non-commercial use. <a href="#" data-url="https://quiver.ai/legal/terms/">Read Quiver's terms</a>.</p>
+    </section>
+
+    <footer class="credit">Free from <a href="#" data-url="https://www.iriscocreative.com/">Iris Cocreative</a>. Not affiliated with QuiverAI.</footer>
+  </main>
+
+  <!-- Main panel -->
+  <main class="panel" id="main" hidden>
+    <header class="brand">
+      <svg class="mark"><use href="#mark"/></svg>
+      <h1>Vector Iris</h1>
+      <span class="powered">Quiver Arrow</span>
+    </header>
+
+    <section class="group first">
+      <div class="seg three" role="radiogroup" id="mode">
+        <button type="button" data-v="trace" role="radio">Trace</button>
+        <button type="button" data-v="redraw" role="radio">Redraw</button>
+        <button type="button" data-v="generate" role="radio">Generate</button>
+      </div>
+      <p class="hint" id="mode-hint"></p>
+    </section>
+
+    <section class="source" id="source">
+      <div class="source-mark" aria-hidden="true">
+        <svg class="ic ic-image" viewBox="0 0 20 20"><rect x="2.5" y="4" width="15" height="12" rx="1.5"/><circle cx="7" cy="8.5" r="1.4"/><path d="M3 14.5l4.2-4 3 2.8 2.6-2.3 4.2 3.8"/></svg>
+        <svg class="ic ic-art" viewBox="0 0 20 20"><path d="M10 2.5l4.5 6.5-4.5 8.5L5.5 9z"/><circle cx="10" cy="9.6" r="1.3"/><path d="M10 11v6.5"/></svg>
+        <svg class="ic ic-new" viewBox="0 0 20 20"><path d="M10 4v12M4 10h12"/></svg>
+        <svg class="ic ic-empty" viewBox="0 0 20 20"><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/></svg>
+      </div>
+      <div class="source-text">
+        <div class="source-name" id="source-name">Nothing selected</div>
+        <div class="source-hint" id="source-hint">Select an image on the canvas.</div>
+      </div>
+    </section>
+
+    <section class="group" id="prompt-fields">
+      <label class="field-label" for="prompt">Prompt</label>
+      <textarea id="prompt" rows="3"></textarea>
+      <label class="field-label" for="instructions">Style <span>(optional)</span></label>
+      <textarea id="instructions" rows="2" placeholder="Flat colors, no gradients, bold shapes."></textarea>
+      <div class="gen-only">
+        <div class="row">
+          <label for="format">Format</label>
+          <select id="format">
+            <option value="1:1">Square</option>
+            <option value="4:3">Landscape 4:3</option>
+            <option value="16:9">Wide 16:9</option>
+            <option value="3:4">Portrait 3:4</option>
+            <option value="9:16">Tall 9:16</option>
+          </select>
+        </div>
+        <label class="check"><input id="use-ref" type="checkbox"><span></span>Use the selection as a style reference</label>
+      </div>
+    </section>
+
+    <section class="group">
+      <div class="heading">Effort</div>
+      <div class="seg four" role="radiogroup" id="effort">
+        <button type="button" data-v="low" role="radio">Low</button>
+        <button type="button" data-v="medium" role="radio">Medium</button>
+        <button type="button" data-v="high" role="radio">High</button>
+        <button type="button" data-v="xhigh" role="radio">Max</button>
+      </div>
+      <p class="hint">How long Arrow reasons before drawing. Higher costs more and adds shapes, which isn't always better. Start on Low.</p>
+      <div class="row">
+        <label for="model">Model</label>
+        <select id="model">
+          <option value="arrow-2-telos">Arrow 2 Telos (best)</option>
+          <option value="arrow-2">Arrow 2 (fastest, cheapest)</option>
+        </select>
+      </div>
+      <div class="row" id="size-row">
+        <label for="size">Export</label>
+        <select id="size">
+          <option value="1024">1024 px</option>
+          <option value="2048">2048 px</option>
+          <option value="4096">4096 px</option>
+        </select>
+      </div>
+    </section>
+
+    <details class="group settings" id="settings">
+      <summary>Settings</summary>
+      <label class="field-label" for="key">Quiver API key <span id="key-state"></span></label>
+      <div class="key-row">
+        <input id="key" type="password" placeholder="Paste a new key" autocomplete="off" spellcheck="false">
+        <button type="button" id="key-save" class="ghost">Save</button>
+      </div>
+      <div class="row">
+        <label for="gap">Gap</label>
+        <span class="num-wrap"><input id="gap" class="num" type="number" min="0" step="1"><i>px</i></span>
+        <span></span>
+      </div>
+      <p class="about">
+        <span id="version"></span> ·
+        <a href="#" data-url="https://quiver.ai/legal/terms/">Quiver terms</a> ·
+        <a href="#" id="forget-key">Forget key</a><br>
+        Free from <a href="#" data-url="https://www.iriscocreative.com/">Iris Cocreative</a>. Not affiliated with QuiverAI.
+      </p>
+    </details>
+
+    <footer class="foot">
+      <div class="progress" id="progress" hidden>
+        <div class="bar"><span></span></div>
+        <div class="progress-text"><span id="progress-label">Working</span><span id="elapsed">0s</span></div>
+      </div>
+      <p id="status" class="status" aria-live="polite"></p>
+      <div class="actions">
+        <button type="button" id="cancel" class="ghost" hidden>Cancel</button>
+        <button type="button" id="go" class="primary">Vectorize</button>
+      </div>
+      <ol class="history" id="history"></ol>
+    </footer>
+  </main>
+  <script>
+/* ../js/quiver.js */
+// Quiver AI Arrow 2 client for Vector Iris. Shared by the Illustrator panel
+// (CEP with Node: Node https) and the Figma plugin (browser iframe: fetch;
+// Quiver allows cross-origin calls). Also runs in plain Node for testing.
+// API: https://docs.quiver.ai
+(function () {
+  'use strict';
+
+  const https = typeof require === 'function' ? require('https') : null;
+
+  const HOST = 'api.quiver.ai';
+  const TIMEOUT_MS = 10 * 60 * 1000; // high effort on a big canvas can take ~3 minutes
+  // USD per 1M tokens, [input, output]
+  const PRICES = { 'arrow-2': [4, 20], 'arrow-2-telos': [6, 30] };
+  const FRAME_ID = 'vi-frame';
+
+  // opts: { mode: 'trace'|'redraw'|'generate', model, effort, width, height,
+  //         imageBase64 (trace/redraw; optional style reference for generate),
+  //         prompt, instructions, maxOutputTokens }
+  // width/height set the aspect ratio: the image's pixels, or the chosen format.
+  function buildRequest(o) {
+    // viewBox keeps the aspect ratio with a 1024 long side (cost tracks canvas size).
+    const long = Math.max(o.width, o.height) || 1;
+    const vw = Math.max(1, Math.round(o.width / long * 1024));
+    const vh = Math.max(1, Math.round(o.height / long * 1024));
+    const body = {
+      model: o.model || 'arrow-2',
+      stream: false,
+      reasoning_effort: o.effort || 'low',
+      max_output_tokens: o.maxOutputTokens || 65536,
+      attributes: { viewBox: { minX: 0, minY: 0, width: vw, height: vh } },
+    };
+    if (o.mode === 'trace') {
+      body.image = { base64: o.imageBase64 };
+      return { path: '/v1/svgs/vectorizations', body };
+    }
+    const fallback = o.mode === 'redraw' ? 'Recreate this image as clean, flat vector artwork.' : '';
+    body.prompt = (o.prompt || '').trim() || fallback;
+    if (!body.prompt) throw new Error('Describe what to generate first.');
+    if ((o.instructions || '').trim()) body.instructions = o.instructions.trim();
+    body.n = 1;
+    if (o.imageBase64) body.references = [{ base64: o.imageBase64 }];
+    return { path: '/v1/svgs/generations', body };
+  }
+
+  // Validates a key without spending credits (GET /v1/models).
+  function checkKey(apiKey) {
+    if (!https) return checkKeyFetch(apiKey);
+    return new Promise((resolve, reject) => {
+      const req = https.request({ host: HOST, path: '/v1/models', method: 'GET', headers: { Authorization: `Bearer ${apiKey}` } }, (res) => {
+        res.resume();
+        res.on('end', () => {
+          if (res.statusCode === 401 || res.statusCode === 403) reject(new Error('Quiver did not accept that key.'));
+          else if (res.statusCode >= 400) reject(new Error(`Quiver answered ${res.statusCode} while checking the key.`));
+          else resolve(true);
+        });
+      });
+      req.setTimeout(20000, () => req.destroy(new Error('Could not reach Quiver to check the key.')));
+      req.on('error', (e) => reject(new Error(e.message.startsWith('Could not') ? e.message : `Network error: ${e.message}`)));
+      req.end();
+    });
+  }
+
+  async function checkKeyFetch(apiKey) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 20000);
+    let res;
+    try {
+      res = await fetch(`https://${HOST}/v1/models`, { headers: { Authorization: `Bearer ${apiKey}` }, signal: ctl.signal });
+    } catch (e) {
+      throw new Error(ctl.signal.aborted ? 'Could not reach Quiver to check the key.' : `Network error: ${e.message}`);
+    } finally { clearTimeout(t); }
+    if (res.status === 401 || res.status === 403) throw new Error('Quiver did not accept that key.');
+    if (res.status >= 400) throw new Error(`Quiver answered ${res.status} while checking the key.`);
+    return true;
+  }
+
+  function friendlyError(status, json, raw) {
+    const msg = (json && (json.message || (json.error && json.error.message))) || '';
+    if (status === 401) return 'Quiver rejected the API key. Check it in Settings.';
+    if (status === 402) return 'Out of Quiver credits. Top up at quiver.ai.';
+    if (status === 429) return `Quiver is rate limiting. Try again in ${json && json.retry_after ? json.retry_after + 's' : 'a moment'}.`;
+    if (status === 400) return `Quiver refused the request: ${msg || 'bad request'}`;
+    return `Quiver error ${status}: ${msg || String(raw).slice(0, 200)}`;
+  }
+
+  // Returns { promise, cancel }. The promise resolves to
+  // { svg, usage, cost, id, seconds } or rejects with a readable Error.
+  function request(apiKey, req) {
+    if (!https) return requestFetch(apiKey, req);
+    let httpReq = null;
+    let canceled = false;
+    const started = Date.now();
+
+    const promise = new Promise((resolve, reject) => {
+      const data = Buffer.from(JSON.stringify(req.body));
+      httpReq = https.request({
+        host: HOST,
+        path: req.path,
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'Content-Length': data.length,
+        },
+      }, (res) => {
+        const chunks = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () => {
+          const raw = Buffer.concat(chunks).toString('utf8');
+          let json = null;
+          try { json = JSON.parse(raw); } catch (e) { /* non-JSON error page */ }
+          if (res.statusCode >= 400 || !json) {
+            reject(new Error(friendlyError(res.statusCode, json, raw)));
+            return;
+          }
+          const svg = json.data && json.data[0] && json.data[0].svg;
+          if (!svg) { reject(new Error('Quiver answered without an SVG.')); return; }
+          if (!/<\/svg>\s*$/.test(svg)) {
+            reject(new Error('The SVG was cut off (hit the output token limit). Try lower detail or a smaller subject.'));
+            return;
+          }
+          resolve({
+            svg,
+            id: json.id,
+            usage: json.usage || {},
+            cost: estimateCost(req.body.model, json.usage),
+            seconds: Math.round((Date.now() - started) / 1000),
+          });
+        });
+      });
+      // Quiver sends nothing until the SVG is done, and slow runs (Telos, high
+      // effort) can sit silent for minutes. Keepalive probes stop routers and
+      // proxies from dropping the idle connection (seen as ECONNRESET at ~35s).
+      httpReq.on('socket', (sock) => sock.setKeepAlive(true, 10000));
+      httpReq.setTimeout(TIMEOUT_MS, () => httpReq.destroy(new Error('Quiver took longer than 10 minutes. Try lower effort.')));
+      httpReq.on('error', (e) => reject(canceled ? new Error('Canceled.') : new Error(e.message.startsWith('Quiver') ? e.message : `Network error: ${e.message}`)));
+      httpReq.end(data);
+    });
+
+    return {
+      promise,
+      cancel() { canceled = true; if (httpReq) httpReq.destroy(); },
+    };
+  }
+
+  // Parses a finished response body into the shape request() resolves with.
+  function parseResult(status, raw, req, started) {
+    let json = null;
+    try { json = JSON.parse(raw); } catch (e) { /* non-JSON error page */ }
+    if (status >= 400 || !json) throw new Error(friendlyError(status, json, raw));
+    const svg = json.data && json.data[0] && json.data[0].svg;
+    if (!svg) throw new Error('Quiver answered without an SVG.');
+    if (!/<\/svg>\s*$/.test(svg)) throw new Error('The SVG was cut off (hit the output token limit). Try lower detail or a smaller subject.');
+    return {
+      svg,
+      id: json.id,
+      usage: json.usage || {},
+      cost: estimateCost(req.body.model, json.usage),
+      seconds: Math.round((Date.now() - started) / 1000),
+    };
+  }
+
+  // Browser version of request() (Figma). The browser owns the socket, so the
+  // keepalive trick above isn't available here.
+  function requestFetch(apiKey, req) {
+    const ctl = new AbortController();
+    let canceled = false, timedOut = false;
+    const started = Date.now();
+    const timer = setTimeout(() => { timedOut = true; ctl.abort(); }, TIMEOUT_MS);
+    const promise = (async () => {
+      try {
+        const res = await fetch(`https://${HOST}${req.path}`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(req.body),
+          signal: ctl.signal,
+        });
+        return parseResult(res.status, await res.text(), req, started);
+      } catch (e) {
+        if (canceled) throw new Error('Canceled.');
+        if (timedOut) throw new Error('Quiver took longer than 10 minutes. Try lower effort.');
+        throw e.message && /^(Quiver|The SVG)/.test(e.message) ? e : new Error(`Network error: ${e.message}`);
+      } finally { clearTimeout(timer); }
+    })();
+    return { promise, cancel() { canceled = true; ctl.abort(); } };
+  }
+
+  function estimateCost(model, usage) {
+    const p = PRICES[model] || PRICES['arrow-2'];
+    if (!usage) return 0;
+    return ((usage.input_tokens || 0) * p[0] + (usage.output_tokens || 0) * p[1]) / 1e6;
+  }
+
+  // Arrow draws as if its canvas were square: given a 1024x801 canvas it drew a
+  // trace inside a centered 801x626 box. So images go in padded to a square
+  // (never stretched) on a square canvas, and the SVG's viewBox is cropped back
+  // to the image's area afterward.
+  //   squarePlan(w, h) -> { size, box: [x, y, w, h] } in canvas units
+  function squarePlan(w, h, size) {
+    size = size || 1024;
+    const long = Math.max(w, h) || 1;
+    const bw = w / long * size, bh = h / long * size;
+    return { size, box: [(size - bw) / 2, (size - bh) / 2, bw, bh] };
+  }
+  const r2 = (n) => Math.round(n * 100) / 100;
+  function cropTo(svg, box) {
+    const open = svg.match(/<svg\b[^>]*>/i);
+    if (!open) return svg;
+    const [x, y, w, h] = box.map(r2);
+    let tag = open[0]
+      .replace(/\s(viewBox|width|height)\s*=\s*("[^"]*"|'[^']*')/gi, '')
+      .replace(/^<svg\b/i, `<svg viewBox="${x} ${y} ${w} ${h}" width="${w}" height="${h}"`);
+    return svg.slice(0, open.index) + tag + svg.slice(open.index + open[0].length);
+  }
+
+  // Add an invisible rect matching the viewBox as the first child, so the
+  // Illustrator side can size, place and clip the import to the SVG's frame.
+  function withFrame(svg) {
+    const open = svg.match(/<svg\b[^>]*>/i);
+    if (!open) return svg;
+    let x = 0, y = 0, w = 0, h = 0;
+    const vb = open[0].match(/viewBox\s*=\s*["']([^"']+)["']/i);
+    if (vb) {
+      const n = vb[1].trim().split(/[\s,]+/).map(Number);
+      if (n.length === 4 && n.every(isFinite)) [x, y, w, h] = n;
+    }
+    if (!(w > 0 && h > 0)) {
+      const wm = open[0].match(/\bwidth\s*=\s*["']([\d.]+)/i), hm = open[0].match(/\bheight\s*=\s*["']([\d.]+)/i);
+      w = wm ? +wm[1] : 0; h = hm ? +hm[1] : 0;
+    }
+    if (!(w > 0 && h > 0)) return svg;
+    const rect = `<rect id="${FRAME_ID}" x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="none"/>`;
+    const at = open.index + open[0].length;
+    return svg.slice(0, at) + rect + svg.slice(at);
+  }
+
+  const api = { buildRequest, request, checkKey, estimateCost, withFrame, squarePlan, cropTo, PRICES };
+  if (typeof window !== 'undefined') window.QuiverAPI = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})();
+</script>
+  <script>
+/* src/ui.js */
+// Vector Iris for Figma: the UI iframe. Onboarding, settings, the
+// export -> Quiver -> place flow, progress and history (the counterpart of js/panel.js).
+(() => {
+  'use strict';
+
+  const VERSION = '0.1.0';
+  const $ = (id) => document.getElementById(id);
+
+  // ---------- main-thread bridge ----------
+
+  let nextId = 1;
+  const pending = new Map();
+  function main(type, args) {
+    return new Promise((resolve) => {
+      const id = nextId++;
+      pending.set(id, resolve);
+      parent.postMessage({ pluginMessage: Object.assign({ type, id }, args) }, '*');
+    });
+  }
+
+  // ---------- settings (figma.clientStorage, via the main thread) ----------
+
+  const defaults = {
+    apiKey: '',
+    mode: 'trace',
+    effort: 'low',
+    model: 'arrow-2-telos',
+    size: 2048,
+    format: '1:1',
+    useRef: false,
+    gap: 24,
+    prompts: { redraw: '', generate: '' },
+    instructions: '',
+    history: [],
+  };
+  let S = Object.assign({}, defaults);
+
+  let saveTimer = null;
+  function save() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => main('saveSettings', { settings: S }), 250);
+  }
+
+  function openURL(url) { main('openURL', { url }); }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[data-url]');
+    if (a) { e.preventDefault(); openURL(a.dataset.url); }
+  });
+
+  // ---------- screens ----------
+
+  function showScreen() {
+    $('welcome').hidden = !!S.apiKey;
+    $('main').hidden = !S.apiKey;
+  }
+
+  async function connect(key, statusEl) {
+    key = key.trim();
+    if (!key) return false;
+    statusEl.className = 'status';
+    statusEl.textContent = 'Checking the key with Quiver...';
+    try {
+      await QuiverAPI.checkKey(key);
+    } catch (e) {
+      statusEl.className = 'status error';
+      statusEl.textContent = e.message;
+      return false;
+    }
+    S.apiKey = key;
+    save();
+    statusEl.className = 'status ok';
+    statusEl.textContent = 'Connected.';
+    return true;
+  }
+
+  $('welcome-connect').addEventListener('click', async () => {
+    if (await connect($('welcome-key').value, $('welcome-status'))) {
+      $('welcome-key').value = '';
+      render();
+      showScreen();
+      setStatus('Connected to Quiver. Select an image, or switch to Generate.', 'ok');
+    }
+  });
+  $('welcome-key').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('welcome-connect').click(); });
+
+  // ---------- status + selection ----------
+
+  function setStatus(text, kind) {
+    const el = $('status');
+    el.textContent = text || '';
+    el.className = 'status' + (kind ? ' ' + kind : '');
+  }
+
+  let running = null; // { cancel, timer, t0 }
+  let sel = { count: 0, images: 0, label: '' };
+
+  const usesImage = () => S.mode !== 'generate' || (S.useRef && sel.count > 0);
+
+  function renderSource() {
+    const box = $('source');
+    const generateNew = S.mode === 'generate' && !(S.useRef && sel.count);
+    box.classList.toggle('ready', !generateNew && sel.count > 0);
+    box.classList.toggle('new', generateNew);
+    box.dataset.kind = generateNew ? 'new' : !sel.count ? 'empty' : sel.images === sel.count ? 'image' : 'art';
+    $('use-ref').disabled = !sel.count;
+    $('size-row').hidden = !usesImage();
+
+    let name, hint;
+    if (generateNew) { name = 'New artwork'; hint = 'Placed in the center of your view.'; }
+    else if (!sel.count) { name = 'Nothing selected'; hint = S.mode === 'generate' ? 'Select a layer to use as a style reference.' : 'Select an image on the canvas.'; }
+    else {
+      name = sel.label;
+      if (S.mode === 'generate') hint = 'Style reference. The result goes beside it.';
+      else if (sel.images === sel.count) hint = sel.count === 1 ? 'Ready. The result goes beside it.' : `${sel.count} images, exported together.`;
+      else hint = 'Layers will be rasterized, then vectorized.';
+    }
+    $('source-name').textContent = name;
+    $('source-hint').textContent = hint;
+  }
+
+  // ---------- controls ----------
+
+  const HINTS = {
+    trace: 'Follows the pixels closely, gradients included. Best for logos, scans and flat art.',
+    redraw: 'Rebuilds the image from flat shapes, guided by a prompt. Best for photos and people.',
+    generate: 'Creates new vector artwork from a description.',
+  };
+  const PLACEHOLDERS = {
+    redraw: 'Recreate this image as clean, flat vector artwork.',
+    generate: 'A minimal line icon of a paper crane, single weight stroke.',
+  };
+
+  function renderKeyState() {
+    const el = $('key-state');
+    if (S.apiKey) { el.textContent = `connected, ends ${S.apiKey.slice(-4)}`; el.className = 'set'; }
+    else { el.textContent = 'not set'; el.className = 'unset'; }
+  }
+
+  function render() {
+    for (const b of $('mode').querySelectorAll('button')) b.setAttribute('aria-checked', String(b.dataset.v === S.mode));
+    for (const b of $('effort').querySelectorAll('button')) b.setAttribute('aria-checked', String(b.dataset.v === S.effort));
+    $('mode-hint').textContent = HINTS[S.mode];
+    $('prompt-fields').hidden = S.mode === 'trace';
+    for (const el of document.querySelectorAll('.gen-only')) el.hidden = S.mode !== 'generate';
+    $('prompt').placeholder = PLACEHOLDERS[S.mode] || '';
+    $('prompt').value = S.prompts[S.mode] || '';
+    $('instructions').value = S.instructions;
+    $('format').value = S.format;
+    $('use-ref').checked = S.useRef;
+    $('model').value = S.model;
+    $('size').value = String(S.size);
+    $('gap').value = S.gap;
+    $('go').textContent = S.mode === 'generate' ? 'Generate' : 'Vectorize';
+    $('version').textContent = `Vector Iris for Figma ${VERSION}`;
+    renderKeyState();
+    renderSource();
+    renderHistory();
+  }
+
+  function set(patch) { Object.assign(S, patch); render(); save(); }
+
+  $('mode').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) set({ mode: b.dataset.v }); });
+  $('effort').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) set({ effort: b.dataset.v }); });
+  $('model').addEventListener('change', (e) => set({ model: e.target.value }));
+  $('size').addEventListener('change', (e) => set({ size: +e.target.value }));
+  $('format').addEventListener('change', (e) => set({ format: e.target.value }));
+  $('use-ref').addEventListener('change', (e) => set({ useRef: e.target.checked }));
+  $('prompt').addEventListener('input', (e) => { S.prompts[S.mode] = e.target.value; save(); });
+  $('instructions').addEventListener('input', (e) => { S.instructions = e.target.value; save(); });
+  $('gap').addEventListener('change', (e) => set({ gap: Math.max(0, +e.target.value || 0) }));
+
+  $('key-save').addEventListener('click', async () => {
+    if (await connect($('key').value, $('status'))) { $('key').value = ''; renderKeyState(); }
+  });
+  $('forget-key').addEventListener('click', (e) => {
+    e.preventDefault();
+    set({ apiKey: '' });
+    showScreen();
+  });
+
+  // ---------- history ----------
+  // Figma plugins can't write files, so each result's SVG stays downloadable
+  // for this session; "Show" finds the placed layer in the file any time.
+
+  const MODE_WORD = { trace: 'Trace', redraw: 'Redraw', generate: 'Generate' };
+  const sessionSVGs = new Map(); // nodeId -> svg text
+
+  function downloadSVG(filename, svg) {
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function renderHistory() {
+    const list = $('history');
+    list.innerHTML = '';
+    for (const h of S.history.slice(0, 6)) {
+      const li = document.createElement('li');
+      const name = document.createElement('span');
+      name.className = 'h-name';
+      name.textContent = h.name;
+      const meta = document.createElement('span');
+      meta.className = 'h-meta';
+      meta.textContent = `${MODE_WORD[h.mode] || h.mode} · ${h.seconds}s · $${h.cost.toFixed(3)}`;
+      meta.title = `${h.tokens.toLocaleString()} tokens`;
+      const links = document.createElement('span');
+      links.className = 'h-links';
+      if (h.nodeId) {
+        const show = document.createElement('a');
+        show.textContent = 'Show';
+        show.addEventListener('click', async () => {
+          const r = await main('show', { nodeId: h.nodeId });
+          if (!r.ok) setStatus(r.error, 'error');
+        });
+        links.append(show);
+      }
+      const svg = h.nodeId && sessionSVGs.get(h.nodeId);
+      if (svg) {
+        const dl = document.createElement('a');
+        dl.textContent = 'SVG';
+        dl.title = 'Download the SVG';
+        dl.addEventListener('click', () => downloadSVG(h.file, svg));
+        links.append(dl);
+      }
+      li.append(name, links, meta);
+      list.append(li);
+    }
+  }
+
+  // ---------- the flow ----------
+
+  const safeName = (s) => String(s).replace(/[<>:"/\\|?*\x00-\x1f]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 50) || 'vector';
+  function stamp() {
+    const d = new Date(), p = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+  }
+  const promptLabel = (s) => { const t = s.trim().replace(/\s+/g, ' '); return t.length > 40 ? t.slice(0, 40).replace(/\s\S*$/, '') + '...' : t; };
+
+  function busy(on, label) {
+    $('go').disabled = on;
+    $('cancel').hidden = !on;
+    $('progress').hidden = !on;
+    if (running && running.timer) clearInterval(running.timer);
+    if (on) {
+      running = running || {};
+      running.t0 = running.t0 || Date.now(); // one clock across all stages
+      $('progress-label').textContent = label;
+      running.timer = setInterval(() => {
+        const s = Math.round((Date.now() - running.t0) / 1000);
+        $('elapsed').textContent = s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`;
+      }, 1000);
+    } else {
+      running = null;
+    }
+  }
+
+  function bytesToBase64(bytes) {
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+  }
+
+  async function decodePNG(bytes) {
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
+    try {
+      const img = new Image();
+      img.src = url;
+      await img.decode();
+      return img;
+    } finally { URL.revokeObjectURL(url); }
+  }
+
+  // Arrow reads images as if they were square (a wide image comes back squeezed
+  // into a centered box). Pad to a square without stretching; the SVG is
+  // cropped back to the image's area after (QuiverAPI.squarePlan / cropTo).
+  function squareImage(img) {
+    const w = img.naturalWidth, h = img.naturalHeight, size = Math.max(w, h);
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    c.getContext('2d').drawImage(img, Math.round((size - w) / 2), Math.round((size - h) / 2), w, h);
+    let b64 = c.toDataURL('image/png').split(',')[1];
+    // Quiver's limit is 12 MiB decoded; a padded 4096 px PNG photo can pass it.
+    if (b64.length * 0.75 > 11.5 * 1024 * 1024) {
+      const ctx = c.getContext('2d');
+      ctx.globalCompositeOperation = 'destination-over';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+      b64 = c.toDataURL('image/jpeg', 0.9).split(',')[1];
+    }
+    return b64;
+  }
+
+  async function go() {
+    if (running) return;
+    const mode = S.mode;
+    const withImage = usesImage();
+    const prompt = S.prompts[mode] || '';
+    if (mode === 'generate' && !prompt.trim()) { setStatus('Describe what to generate first.', 'error'); $('prompt').focus(); return; }
+
+    running = {};
+    busy(true, withImage ? 'Exporting from Figma' : 'Preparing');
+    setStatus('');
+
+    try {
+      let ex = null, imageBase64 = null, width, height, crop = null;
+      if (withImage) {
+        ex = await main('exportSelection', { maxPx: S.size });
+        if (!ex.ok) throw new Error(ex.error);
+        if (mode === 'generate') {
+          // A style reference only guides the look; the canvas follows the chosen format.
+          imageBase64 = bytesToBase64(ex.bytes);
+          [width, height] = S.format.split(':').map(Number);
+        } else {
+          const img = await decodePNG(ex.bytes);
+          imageBase64 = squareImage(img);
+          width = height = 1;
+          crop = QuiverAPI.squarePlan(img.naturalWidth, img.naturalHeight).box;
+        }
+      } else {
+        [width, height] = S.format.split(':').map(Number);
+      }
+
+      const req = QuiverAPI.buildRequest({
+        mode, model: S.model, effort: S.effort, imageBase64, width, height,
+        prompt, instructions: S.instructions,
+      });
+      const modelName = S.model === 'arrow-2-telos' ? 'Arrow 2 Telos' : 'Arrow 2';
+      const verb = { trace: 'Tracing', redraw: 'Redrawing', generate: 'Generating' }[mode];
+      busy(true, `${verb} with ${modelName}`);
+      setStatus(S.effort === 'low' || S.effort === 'medium' ? 'Usually 10 to 90 seconds.' : 'High effort can take 2 to 4 minutes.');
+
+      const job = QuiverAPI.request(S.apiKey, req);
+      running.cancel = job.cancel;
+      const res = await job.promise;
+      if (crop) res.svg = QuiverAPI.cropTo(res.svg, crop);
+
+      const label = mode === 'generate' ? promptLabel(prompt) : ex.label;
+      const file = `${safeName(label)} ${mode} ${stamp()}.svg`;
+
+      busy(true, 'Placing in Figma');
+      const name = `Vector Iris ${MODE_WORD[mode].toLowerCase()}: ${label}`;
+      const pl = await main('place', withImage
+        ? { svg: res.svg, name, target: 'beside', bounds: ex.bounds, gap: S.gap }
+        : { svg: res.svg, name, target: 'view', viewFraction: 0.5 });
+
+      const tokens = res.usage.total_tokens || (res.usage.input_tokens || 0) + (res.usage.output_tokens || 0);
+      if (pl.ok) sessionSVGs.set(pl.nodeId, res.svg);
+      S.history.unshift({ name: label, mode, seconds: res.seconds, tokens, cost: res.cost, file, nodeId: pl.ok ? pl.nodeId : null });
+      S.history = S.history.slice(0, 20);
+      save();
+      renderHistory();
+
+      if (!pl.ok) {
+        // Nothing landed in the file, so hand the SVG over directly.
+        downloadSVG(file, res.svg);
+        setStatus(`Could not place it: ${pl.error} The SVG was downloaded instead.`, 'error');
+      } else setStatus(`Done in ${res.seconds}s, about $${res.cost.toFixed(3)}.`, 'ok');
+    } catch (e) {
+      setStatus(e.message || String(e), 'error');
+    } finally {
+      busy(false);
+    }
+  }
+
+  $('go').addEventListener('click', go);
+  $('cancel').addEventListener('click', () => {
+    if (running && running.cancel) running.cancel();
+    setStatus('Canceling. Quiver may still bill for work already done.');
+  });
+
+  // ---------- messages from the main thread ----------
+
+  window.onmessage = (e) => {
+    const msg = e.data && e.data.pluginMessage;
+    if (!msg) return;
+    if (msg.type === 'reply') {
+      const resolve = pending.get(msg.id);
+      if (resolve) { pending.delete(msg.id); resolve(msg); }
+    } else if (msg.type === 'init') {
+      S = Object.assign({}, defaults, msg.settings);
+      S.prompts = Object.assign({}, defaults.prompts, S.prompts);
+      sel = msg.selection;
+      render();
+      showScreen();
+    } else if (msg.type === 'selection') {
+      sel = msg.selection;
+      renderSource();
+    }
+  };
+})();
+</script>
+</body>
+</html>

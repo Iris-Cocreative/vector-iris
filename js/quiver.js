@@ -1,9 +1,11 @@
-// Quiver AI Arrow 2 client for Vector Iris. Runs in the panel (CEP with Node
-// enabled) and in plain Node for testing. API: https://docs.quiver.ai
+// Quiver AI Arrow 2 client for Vector Iris. Shared by the Illustrator panel
+// (CEP with Node: Node https) and the Figma plugin (browser iframe: fetch;
+// Quiver allows cross-origin calls). Also runs in plain Node for testing.
+// API: https://docs.quiver.ai
 (function () {
   'use strict';
 
-  const https = require('https');
+  const https = typeof require === 'function' ? require('https') : null;
 
   const HOST = 'api.quiver.ai';
   const TIMEOUT_MS = 10 * 60 * 1000; // high effort on a big canvas can take ~3 minutes
@@ -42,6 +44,7 @@
 
   // Validates a key without spending credits (GET /v1/models).
   function checkKey(apiKey) {
+    if (!https) return checkKeyFetch(apiKey);
     return new Promise((resolve, reject) => {
       const req = https.request({ host: HOST, path: '/v1/models', method: 'GET', headers: { Authorization: `Bearer ${apiKey}` } }, (res) => {
         res.resume();
@@ -57,6 +60,20 @@
     });
   }
 
+  async function checkKeyFetch(apiKey) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 20000);
+    let res;
+    try {
+      res = await fetch(`https://${HOST}/v1/models`, { headers: { Authorization: `Bearer ${apiKey}` }, signal: ctl.signal });
+    } catch (e) {
+      throw new Error(ctl.signal.aborted ? 'Could not reach Quiver to check the key.' : `Network error: ${e.message}`);
+    } finally { clearTimeout(t); }
+    if (res.status === 401 || res.status === 403) throw new Error('Quiver did not accept that key.');
+    if (res.status >= 400) throw new Error(`Quiver answered ${res.status} while checking the key.`);
+    return true;
+  }
+
   function friendlyError(status, json, raw) {
     const msg = (json && (json.message || (json.error && json.error.message))) || '';
     if (status === 401) return 'Quiver rejected the API key. Check it in Settings.';
@@ -69,6 +86,7 @@
   // Returns { promise, cancel }. The promise resolves to
   // { svg, usage, cost, id, seconds } or rejects with a readable Error.
   function request(apiKey, req) {
+    if (!https) return requestFetch(apiKey, req);
     let httpReq = null;
     let canceled = false;
     const started = Date.now();
@@ -123,6 +141,48 @@
       promise,
       cancel() { canceled = true; if (httpReq) httpReq.destroy(); },
     };
+  }
+
+  // Parses a finished response body into the shape request() resolves with.
+  function parseResult(status, raw, req, started) {
+    let json = null;
+    try { json = JSON.parse(raw); } catch (e) { /* non-JSON error page */ }
+    if (status >= 400 || !json) throw new Error(friendlyError(status, json, raw));
+    const svg = json.data && json.data[0] && json.data[0].svg;
+    if (!svg) throw new Error('Quiver answered without an SVG.');
+    if (!/<\/svg>\s*$/.test(svg)) throw new Error('The SVG was cut off (hit the output token limit). Try lower detail or a smaller subject.');
+    return {
+      svg,
+      id: json.id,
+      usage: json.usage || {},
+      cost: estimateCost(req.body.model, json.usage),
+      seconds: Math.round((Date.now() - started) / 1000),
+    };
+  }
+
+  // Browser version of request() (Figma). The browser owns the socket, so the
+  // keepalive trick above isn't available here.
+  function requestFetch(apiKey, req) {
+    const ctl = new AbortController();
+    let canceled = false, timedOut = false;
+    const started = Date.now();
+    const timer = setTimeout(() => { timedOut = true; ctl.abort(); }, TIMEOUT_MS);
+    const promise = (async () => {
+      try {
+        const res = await fetch(`https://${HOST}${req.path}`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(req.body),
+          signal: ctl.signal,
+        });
+        return parseResult(res.status, await res.text(), req, started);
+      } catch (e) {
+        if (canceled) throw new Error('Canceled.');
+        if (timedOut) throw new Error('Quiver took longer than 10 minutes. Try lower effort.');
+        throw e.message && /^(Quiver|The SVG)/.test(e.message) ? e : new Error(`Network error: ${e.message}`);
+      } finally { clearTimeout(timer); }
+    })();
+    return { promise, cancel() { canceled = true; ctl.abort(); } };
   }
 
   function estimateCost(model, usage) {
