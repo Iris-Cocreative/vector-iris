@@ -12,7 +12,7 @@ speckled fragments of a classic trace. Or describe something and it draws it.
 
 | Mode | What it does | Best for |
 |---|---|---|
-| **Trace** | Follows the pixels closely, keeping gradients and blur | Logos, scans, flat illustration, UI art |
+| **Trace** | Follows the pixels closely, gradients included | Logos, scans, flat illustration, UI art |
 | **Redraw** | Rebuilds the image from flat shapes, guided by a prompt | Photos, people, anything you want simplified |
 | **Generate** | Creates new artwork from a description, optionally matching the style of your selection | Icons, marks, spot illustrations |
 
@@ -51,7 +51,7 @@ estimated cost of every run. As a guide, from our testing on Arrow 2:
 | Job | Time | Cost |
 |---|---|---|
 | Simple icon or logo, low effort | 10 to 35 s | about 3¢ |
-| Flat graphic or pattern, low effort | under a minute | 9 to 22¢ |
+| Flat graphic or pattern, low effort | 30 to 75 s | 9 to 22¢ |
 | Photo, high effort | 3 to 4 min | 40 to 55¢ |
 
 Arrow 2 Telos costs about 50% more. The size of the image you send barely
@@ -61,7 +61,7 @@ first and only the visible area is sent.
 ## Choosing settings
 
 **Start with Arrow 2 Telos on Low effort.** That's the default, and in our
-tests it beat every other combination on flat graphics.
+tests it gave the best results on flat graphics.
 
 **Effort** is how long Arrow reasons before it draws, not how detailed the
 result is. In a side-by-side test on the same image, Medium billed 2.3 times
@@ -114,6 +114,15 @@ Some details that took testing to get right:
 - **Export resolution.** The selection is copied into a temporary document and
   scaled so 1 pt = 1 pixel at the target size, which gets around the PNG
   exporter's scale limit for small artwork.
+- **Square in, cropped out.** Arrow reads images as if they were square: a
+  1024 x 801 canvas came back with the trace squeezed into a centered 801 x 626
+  box, and Redraw proportions drifted on wide or tall photos. Trace and Redraw
+  now pad the image to a square (never stretched), ask for a square canvas, and
+  crop the SVG's viewBox back to the image. Generate is unaffected: it fills
+  wide and tall canvases correctly.
+- **Slow runs stay connected.** Quiver sends nothing until the SVG is done, and
+  Telos or high-effort runs can sit silent for minutes; TCP keepalive stops the
+  network from dropping the idle connection.
 - **The SVG's frame.** Illustrator's SVG import ignores the viewBox and keeps
   shapes drawn past the edge. Vector Iris adds an invisible frame before
   importing, uses it to size and align the result, and turns it into a

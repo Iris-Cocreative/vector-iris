@@ -2,7 +2,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '0.2.0';
+  const VERSION = '0.3.0';
   const cep = window.__adobe_cep__;
   const node = typeof require === 'function';
   const fs = node ? require('fs') : null;
@@ -153,6 +153,7 @@
     const generateNew = S.mode === 'generate' && !(S.useRef && sel.count);
     box.classList.toggle('ready', !generateNew && sel.count > 0);
     box.classList.toggle('new', generateNew);
+    box.dataset.kind = generateNew ? 'new' : !sel.count ? 'empty' : sel.images === sel.count ? 'image' : 'art';
     $('use-ref').disabled = !sel.count;
     $('size-row').hidden = !usesImage();
 
@@ -173,7 +174,7 @@
   // ---------- controls ----------
 
   const HINTS = {
-    trace: 'Follows the pixels closely, keeping gradients and blur. Best for logos, scans and flat art.',
+    trace: 'Follows the pixels closely, gradients included. Best for logos, scans and flat art.',
     redraw: 'Rebuilds the image from flat shapes, guided by a prompt. Best for photos and people.',
     generate: 'Creates new vector artwork from a description.',
   };
@@ -290,6 +291,26 @@
     }
   }
 
+  // Arrow reads images as if they were square (a wide image comes back squeezed
+  // into a centered box). Pad to a square without stretching; the SVG is
+  // cropped back to the image's area after (QuiverAPI.squarePlan / cropTo).
+  async function squareImage(file, w, h, format) {
+    const size = Math.max(w, h);
+    const mime = format === 'jpg' ? 'image/jpeg' : 'image/png';
+    const img = new Image();
+    img.src = `data:${mime};base64,${fs.readFileSync(file).toString('base64')}`;
+    await img.decode();
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    if (format === 'jpg') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, size, size); }
+    ctx.drawImage(img, Math.round((size - w) / 2), Math.round((size - h) / 2), w, h);
+    let b64 = c.toDataURL(mime, 0.9).split(',')[1];
+    // Quiver's limit is 12 MiB decoded; a padded 4096 px PNG photo can pass it.
+    if (b64.length * 0.75 > 11.5 * 1024 * 1024) b64 = c.toDataURL('image/jpeg', 0.9).split(',')[1];
+    return b64;
+  }
+
   async function go() {
     if (running) return;
     if (!node) { setStatus('Open this panel inside Illustrator (Window > Extensions).', 'error'); return; }
@@ -307,13 +328,20 @@
     setStatus('');
 
     try {
-      let ex = null, imageBase64 = null, width, height;
+      let ex = null, imageBase64 = null, width, height, crop = null;
       if (withImage) {
         ex = await host('exportSelection', { maxPx: S.size, outBase: slash(path.join(tmpDir, `export-${Date.now()}`)) });
         if (!ex.ok) throw new Error(ex.error);
         tmpFiles.push(ex.file);
-        imageBase64 = fs.readFileSync(ex.file).toString('base64');
-        width = ex.width; height = ex.height;
+        if (mode === 'generate') {
+          // A style reference only guides the look; the canvas follows the chosen format.
+          imageBase64 = fs.readFileSync(ex.file).toString('base64');
+          [width, height] = S.format.split(':').map(Number);
+        } else {
+          imageBase64 = await squareImage(ex.file, ex.width, ex.height, ex.format);
+          width = height = 1;
+          crop = QuiverAPI.squarePlan(ex.width, ex.height).box;
+        }
       } else {
         if (!sel.docName) throw new Error('Open a document first.');
         [width, height] = S.format.split(':').map(Number);
@@ -331,6 +359,7 @@
       const job = QuiverAPI.request(S.apiKey, req);
       running.cancel = job.cancel;
       const res = await job.promise;
+      if (crop) res.svg = QuiverAPI.cropTo(res.svg, crop);
 
       const label = mode === 'generate' ? promptLabel(prompt) : ex.label;
       fs.mkdirSync(S.outDir, { recursive: true });

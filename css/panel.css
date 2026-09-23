@@ -51,10 +51,12 @@ textarea::-webkit-scrollbar-thumb { border-width: 2px; }
 .source-mark {
   flex: none; width: 34px; height: 34px; border-radius: 4px;
   border: 1px dashed var(--line);
-  background:
-    linear-gradient(135deg, transparent 46%, var(--line) 46% 54%, transparent 54%);
+  display: grid; place-items: center; color: var(--muted);
 }
-.source.ready .source-mark { border-style: solid; border-color: var(--accent); background: var(--accent); opacity: 0.85; }
+.source-mark .ic { display: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.source[data-kind="image"] .ic-image, .source[data-kind="art"] .ic-art,
+.source[data-kind="new"] .ic-new, .source:not([data-kind]) .ic-empty, .source[data-kind="empty"] .ic-empty { display: block; }
+.source.ready .source-mark { border-style: solid; border-color: var(--accent); color: var(--accent); }
 .source-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .source-hint { color: var(--muted); font-size: 11px; }
 
@@ -158,12 +160,7 @@ a:hover { text-decoration: underline; }
 
 /* ---------- source + generate ---------- */
 .source-text { min-width: 0; }
-.source.new .source-mark {
-  border-style: solid; border-color: var(--line);
-  background: none;
-  display: grid; place-items: center;
-}
-.source.new .source-mark::after { content: "+"; color: var(--muted); font-size: 18px; line-height: 1; }
+.source.new .source-mark { border-style: solid; }
 .gen-only { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
 .check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
 .check input { position: absolute; opacity: 0; pointer-events: none; }

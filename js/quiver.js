@@ -110,7 +110,11 @@
           });
         });
       });
-      httpReq.setTimeout(TIMEOUT_MS, () => httpReq.destroy(new Error('Quiver took longer than 10 minutes. Try lower detail.')));
+      // Quiver sends nothing until the SVG is done, and slow runs (Telos, high
+      // effort) can sit silent for minutes. Keepalive probes stop routers and
+      // proxies from dropping the idle connection (seen as ECONNRESET at ~35s).
+      httpReq.on('socket', (sock) => sock.setKeepAlive(true, 10000));
+      httpReq.setTimeout(TIMEOUT_MS, () => httpReq.destroy(new Error('Quiver took longer than 10 minutes. Try lower effort.')));
       httpReq.on('error', (e) => reject(canceled ? new Error('Canceled.') : new Error(e.message.startsWith('Quiver') ? e.message : `Network error: ${e.message}`)));
       httpReq.end(data);
     });
@@ -125,6 +129,28 @@
     const p = PRICES[model] || PRICES['arrow-2'];
     if (!usage) return 0;
     return ((usage.input_tokens || 0) * p[0] + (usage.output_tokens || 0) * p[1]) / 1e6;
+  }
+
+  // Arrow draws as if its canvas were square: given a 1024x801 canvas it drew a
+  // trace inside a centered 801x626 box. So images go in padded to a square
+  // (never stretched) on a square canvas, and the SVG's viewBox is cropped back
+  // to the image's area afterward.
+  //   squarePlan(w, h) -> { size, box: [x, y, w, h] } in canvas units
+  function squarePlan(w, h, size) {
+    size = size || 1024;
+    const long = Math.max(w, h) || 1;
+    const bw = w / long * size, bh = h / long * size;
+    return { size, box: [(size - bw) / 2, (size - bh) / 2, bw, bh] };
+  }
+  const r2 = (n) => Math.round(n * 100) / 100;
+  function cropTo(svg, box) {
+    const open = svg.match(/<svg\b[^>]*>/i);
+    if (!open) return svg;
+    const [x, y, w, h] = box.map(r2);
+    let tag = open[0]
+      .replace(/\s(viewBox|width|height)\s*=\s*("[^"]*"|'[^']*')/gi, '')
+      .replace(/^<svg\b/i, `<svg viewBox="${x} ${y} ${w} ${h}" width="${w}" height="${h}"`);
+    return svg.slice(0, open.index) + tag + svg.slice(open.index + open[0].length);
   }
 
   // Add an invisible rect matching the viewBox as the first child, so the
@@ -148,7 +174,7 @@
     return svg.slice(0, at) + rect + svg.slice(at);
   }
 
-  const api = { buildRequest, request, checkKey, estimateCost, withFrame, PRICES };
+  const api = { buildRequest, request, checkKey, estimateCost, withFrame, squarePlan, cropTo, PRICES };
   if (typeof window !== 'undefined') window.QuiverAPI = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();
