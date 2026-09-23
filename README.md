@@ -21,20 +21,27 @@ Every result is also saved as an `.svg` file (default: `Documents/Vector Iris`).
 ## Requirements
 
 - Adobe Illustrator 2021 (v25) or later
-- Windows (macOS support is coming; the code is cross-platform but untested there)
+- Windows or macOS (macOS support is new; please [report issues](https://github.com/Iris-Cocreative/vector-iris/issues))
 - A [Quiver API account](https://platform.quiver.ai/) with credit (prepaid, from $10)
 
 ## Install
 
-1. Download or clone this repository.
-2. Double-click **`install.cmd`**.
-3. Restart Illustrator and open **Window › Extensions › Vector Iris**.
-4. Paste your Quiver API key when asked. Vector Iris checks it with Quiver before saving.
+Download this repository (**Code › Download ZIP**, then unzip) or clone it.
 
-The installer copies the panel to `%APPDATA%\Adobe\CEP\extensions` and turns
-on Adobe's `PlayerDebugMode` setting, which Illustrator requires for panels
-installed outside Adobe's marketplace. `uninstall.cmd` removes the panel;
-`uninstall.cmd -ResetDebug` also turns that setting back off.
+**Windows:** double-click **`install.cmd`**.
+
+**macOS:** open Terminal, type `bash ` (with a space), drag **`install.sh`**
+into the window, and press Return.
+
+Then quit Illustrator completely, reopen it, and choose
+**Window › Extensions › Vector Iris**. Paste your Quiver API key when asked;
+Vector Iris checks it with Quiver before saving.
+
+The installer copies the panel into Adobe's extensions folder and turns on
+Adobe's `PlayerDebugMode` setting, which Illustrator requires for panels
+installed outside Adobe's marketplace. To remove it, run `uninstall.cmd` or
+`uninstall.sh`; add `-ResetDebug` (Windows) or `--reset-debug` (macOS) to also
+turn that setting back off.
 
 ## Cost
 
@@ -70,7 +77,9 @@ over and under each other, for example. Expect those to need cleanup.
 ## Privacy
 
 - Your API key is stored only on your computer, in
-  `%APPDATA%\IrisCocreative\VectorIris\settings.json`, and is sent only to Quiver.
+  `%APPDATA%\IrisCocreative\VectorIris\settings.json` (Windows) or
+  `~/Library/Application Support/IrisCocreative/VectorIris/settings.json`
+  (macOS), and is sent only to Quiver.
 - The images you vectorize and the prompts you write are sent to Quiver's API
   for processing. Nothing is sent to Iris Cocreative, and the panel has no
   analytics.
@@ -110,8 +119,9 @@ Some details that took testing to get right:
   importing, uses it to size and align the result, and turns it into a
   clipping mask so the art matches what a browser shows.
 
-**Developing:** run `install.ps1 -Link` to link this folder instead of copying
-it, then close and reopen the panel to pick up changes. Chrome DevTools for
+**Developing:** run `install.ps1 -Link` (Windows) or `./install.sh --link`
+(macOS) to link this folder instead of copying it, then close and reopen the
+panel to pick up changes. Chrome DevTools for
 the panel: `http://localhost:8089` (see `.debug`).
 
 ## Known limits

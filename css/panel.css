@@ -28,6 +28,22 @@ body {
   overflow-x: hidden;
 }
 
+/* Scrollbars: thin, themed, and only as visible as they need to be.
+   WebKit pseudo-elements, because that's what CEP's Chromium honors. */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 5px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  min-height: 32px;
+}
+::-webkit-scrollbar-thumb:hover { background-color: var(--muted); }
+::-webkit-scrollbar-thumb:active { background-color: var(--accent); }
+textarea::-webkit-scrollbar { width: 8px; }
+textarea::-webkit-scrollbar-thumb { border-width: 2px; }
+
 .panel { display: flex; flex-direction: column; min-height: 100%; padding: 12px; gap: 12px; }
 
 .source { display: flex; align-items: center; gap: 10px; min-width: 0; }
